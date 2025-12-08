@@ -14,7 +14,25 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({ isOpen, onClose, onS
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setProcessing(true);
-    // Simulate payment processing delay
+    
+    // -------------------------------------------------------------------------
+    // REAL MONEY INTEGRATION POINT
+    // -------------------------------------------------------------------------
+    // To receive actual funds to your bank account, you must integrate a payment processor.
+    // Recommended: Stripe (https://stripe.com)
+    //
+    // 1. Install Stripe: npm install @stripe/react-stripe-js @stripe/stripe-js
+    // 2. Create a PaymentIntent on your backend server.
+    // 3. Confirm the payment here using stripe.confirmCardPayment().
+    //
+    // Example pseudocode:
+    // const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
+    //   payment_method: { card: elements.getElement(CardElement) }
+    // });
+    // if (!error) onSuccess();
+    // -------------------------------------------------------------------------
+
+    // SIMULATION: Simulating a successful payment for demonstration
     setTimeout(() => {
       setProcessing(false);
       onSuccess();

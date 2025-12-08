@@ -7,10 +7,11 @@ import { PaymentModal } from './PaymentModal';
 interface VideoGeneratorProps {
   credits: number;
   onSpendCredit: () => void;
+  onRefundCredit: () => void;
   onPurchaseSuccess: () => void;
 }
 
-export const VideoGenerator = ({ credits, onSpendCredit, onPurchaseSuccess }: VideoGeneratorProps) => {
+export const VideoGenerator = ({ credits, onSpendCredit, onRefundCredit, onPurchaseSuccess }: VideoGeneratorProps) => {
   const [selectedImage, setSelectedImage] = useState<FileData | null>(null);
   const [prompt, setPrompt] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
@@ -21,7 +22,7 @@ export const VideoGenerator = ({ credits, onSpendCredit, onPurchaseSuccess }: Vi
   const handleGenerate = async () => {
     if (!selectedImage || !prompt.trim()) return;
 
-    // Check API Key selection for Veo models
+    // Check API Key selection for Veo models (if in AI Studio)
     if (window.aistudio) {
       const hasKey = await window.aistudio.hasSelectedApiKey();
       if (!hasKey) {
@@ -39,19 +40,21 @@ export const VideoGenerator = ({ credits, onSpendCredit, onPurchaseSuccess }: Vi
     setError(null);
     setVideoUrl(null);
 
+    // Deduct credit immediately (optimistic UI)
+    onSpendCredit();
+
     try {
-      // Deduct credit immediately (optimistic UI)
-      // Real app would verify this on backend
-      onSpendCredit();
-      
       const url = await generateVideoWithGemini(selectedImage, prompt);
       setVideoUrl(url);
     } catch (err: any) {
       console.error(err);
+      // Refund credit if generation failed
+      onRefundCredit();
+      
       const errorMessage = err.message || "Failed to generate video. Please try again.";
       
-      // If the developers key is invalid (404), likely means user needs to select a paid key
-      if (errorMessage.includes("Requested entity was not found") && window.aistudio) {
+      // If the developers key is invalid (404/403), likely means user needs to select a paid key or billing is issue
+      if ((errorMessage.includes("Requested entity was not found") || errorMessage.includes("403")) && window.aistudio) {
          await window.aistudio.openSelectKey();
          setError("Please select a valid API key from a paid GCP project and try again.");
       } else {

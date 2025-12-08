@@ -2,12 +2,14 @@ import { useState } from 'react';
 import { ImageUploader } from './components/ImageUploader';
 import { ResultDisplay } from './components/ResultDisplay';
 import { VideoGenerator } from './components/VideoGenerator';
+import { ChatInterface } from './components/ChatInterface';
 import { editImageWithGemini } from './services/geminiService';
 import { FileData, GenerationResult } from './types';
 
 function App() {
-  const [mode, setMode] = useState<'image' | 'video'>('image');
-  const [credits, setCredits] = useState<number>(0); // Global credit state
+  const [mode, setMode] = useState<'image' | 'video' | 'chat'>('image');
+  // Initialize with 1 credit so the user can generate one video for free
+  const [credits, setCredits] = useState<number>(1); 
   
   // Image Editor State
   const [selectedImage, setSelectedImage] = useState<FileData | null>(null);
@@ -72,12 +74,12 @@ function App() {
           </h1>
           
           {/* Navigation Toggle */}
-          <div className="bg-gray-800/60 p-1 rounded-xl inline-flex mb-8 border border-gray-700 backdrop-blur-sm">
+          <div className="bg-gray-800/60 p-1 rounded-xl inline-flex mb-8 border border-gray-700 backdrop-blur-sm shadow-md overflow-hidden">
             <button
               onClick={() => setMode('image')}
-              className={`px-6 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+              className={`px-4 sm:px-6 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
                 mode === 'image'
-                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/25'
+                  ? 'bg-blue-600 text-white shadow-lg'
                   : 'text-gray-400 hover:text-white hover:bg-white/5'
               }`}
             >
@@ -85,25 +87,37 @@ function App() {
             </button>
             <button
               onClick={() => setMode('video')}
-              className={`px-6 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+              className={`px-4 sm:px-6 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
                 mode === 'video'
-                  ? 'bg-green-600 text-white shadow-lg shadow-green-500/25'
+                  ? 'bg-green-600 text-white shadow-lg'
                   : 'text-gray-400 hover:text-white hover:bg-white/5'
               }`}
             >
               Video Animation
+            </button>
+            <button
+              onClick={() => setMode('chat')}
+              className={`px-4 sm:px-6 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 ${
+                mode === 'chat'
+                  ? 'bg-indigo-600 text-white shadow-lg'
+                  : 'text-gray-400 hover:text-white hover:bg-white/5'
+              }`}
+            >
+              Chat Mimino
             </button>
           </div>
 
           <p className="text-gray-400 text-lg max-w-2xl mx-auto text-center">
             {mode === 'image' 
               ? "Upload an image and use natural language to transform it. Swap faces, change backgrounds, or reimagine the scene entirely."
-              : "Bring your images to life with AI-generated video animations. Purchase credits to start creating amazing animations."
+              : mode === 'video'
+                ? "Bring your images to life with AI-generated video animations. Start with 1 free credit, then purchase more to keep creating."
+                : "Chat with Mimino, your bilingual AI assistant. Ask questions in English or Georgian!"
             }
           </p>
         </header>
 
-        {mode === 'image' ? (
+        {mode === 'image' && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-start">
             {/* Left Column: Inputs */}
             <div className="space-y-6">
@@ -169,12 +183,19 @@ function App() {
                </div>
             </div>
           </div>
-        ) : (
+        )}
+
+        {mode === 'video' && (
           <VideoGenerator 
              credits={credits}
              onSpendCredit={() => setCredits(c => Math.max(0, c - 1))}
+             onRefundCredit={() => setCredits(c => c + 1)}
              onPurchaseSuccess={() => setCredits(c => c + 5)}
           />
+        )}
+
+        {mode === 'chat' && (
+          <ChatInterface />
         )}
       </div>
     </div>
