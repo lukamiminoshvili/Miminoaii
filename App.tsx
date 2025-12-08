@@ -7,6 +7,7 @@ import { FileData, GenerationResult } from './types';
 
 function App() {
   const [mode, setMode] = useState<'image' | 'video'>('image');
+  const [credits, setCredits] = useState<number>(0); // Global credit state
   
   // Image Editor State
   const [selectedImage, setSelectedImage] = useState<FileData | null>(null);
@@ -50,8 +51,23 @@ function App() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-900 to-black text-white p-4 sm:p-8 font-sans selection:bg-blue-500/30">
       <div className="max-w-6xl mx-auto">
-        <header className="mb-10 text-center flex flex-col items-center">
-          <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 mb-6">
+        <header className="mb-10 flex flex-col items-center relative">
+          
+          {/* Credits Badge */}
+          <div className="absolute top-0 right-0 sm:right-4 bg-gray-800 border border-gray-700 rounded-full px-4 py-1.5 flex items-center gap-2 shadow-lg">
+             <div className={`w-2 h-2 rounded-full ${credits > 0 ? 'bg-green-500 animate-pulse' : 'bg-red-500'}`}></div>
+             <span className="text-sm font-medium text-gray-300">Credits: <span className="text-white font-bold">{credits}</span></span>
+             {credits === 0 && (
+                <button 
+                  onClick={() => setMode('video')} // Direct user to video where they can buy
+                  className="ml-2 text-xs text-green-400 hover:text-green-300 font-semibold underline decoration-green-500/50 hover:decoration-green-500"
+                >
+                   Add +
+                </button>
+             )}
+          </div>
+
+          <h1 className="text-4xl sm:text-6xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 mb-6 mt-8 sm:mt-0">
             Mimino Editor
           </h1>
           
@@ -79,10 +95,10 @@ function App() {
             </button>
           </div>
 
-          <p className="text-gray-400 text-lg max-w-2xl mx-auto">
+          <p className="text-gray-400 text-lg max-w-2xl mx-auto text-center">
             {mode === 'image' 
               ? "Upload an image and use natural language to transform it. Swap faces, change backgrounds, or reimagine the scene entirely."
-              : "Bring your images to life with AI-generated video animations. Upload a reference image and describe the movement."
+              : "Bring your images to life with AI-generated video animations. Purchase credits to start creating amazing animations."
             }
           </p>
         </header>
@@ -154,7 +170,11 @@ function App() {
             </div>
           </div>
         ) : (
-          <VideoGenerator />
+          <VideoGenerator 
+             credits={credits}
+             onSpendCredit={() => setCredits(c => Math.max(0, c - 1))}
+             onPurchaseSuccess={() => setCredits(c => c + 5)}
+          />
         )}
       </div>
     </div>

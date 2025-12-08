@@ -5,7 +5,7 @@ declare namespace NodeJS {
 }
 
 interface Window {
-  aistudio: {
+  aistudio?: {
     hasSelectedApiKey: () => Promise<boolean>;
     openSelectKey: () => Promise<void>;
   }
