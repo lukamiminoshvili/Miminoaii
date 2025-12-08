@@ -1,0 +1,5 @@
+{
+  "name": " Mimino Editor",
+  "description": "Edit and transform images using text prompts powered by Gemini 2.5 Flash Image.",
+  "requestFramePermissions": []
+}
