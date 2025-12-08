@@ -1,28 +1,29 @@
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { FileData, GenerationResult } from "../types";
 
 const createClient = () => {
-  const apiKey = process.env.API_KEY;
+  const apiKey = import.meta.env.VITE_API_KEY;
   if (!apiKey) {
-    throw new Error("API_KEY environment variable is not set");
+    throw new Error("VITE_API_KEY is not set");
   }
-  return new GoogleGenAI({ apiKey });
+  return new GoogleGenerativeAI(apiKey);
 };
 
 export const editImageWithGemini = async (
   imageData: FileData,
   prompt: string
 ): Promise<GenerationResult> => {
-  const ai = createClient();
-  const model = "gemini-2.5-flash-image";
+  const genAI = createClient();
+  const model = genAI.getGenerativeModel({
+    model: "gemini-1.5-flash",
+  });
 
-  try {
-    // Clean base64 string (remove data URL prefix)
-    const cleanBase64 = imageData.base64.split(",")[1];
+  const cleanBase64 = imageData.base64.split(",")[1];
 
-    const response = await ai.models.generateContent({
-      model: model,
-      contents: {
+  const result = await model.generateContent({
+    contents: [
+      {
+        role: "user",
         parts: [
           {
             inlineData: {
@@ -35,30 +36,26 @@ export const editImageWithGemini = async (
           },
         ],
       },
-    });
+    ],
+  });
 
-    let generatedImageUrl: string | null = null;
-    let generatedText: string | null = null;
+  const response = result.response;
+  const parts = response.candidates?.[0]?.content?.parts ?? [];
 
-    if (response.candidates && response.candidates.length > 0) {
-      const content = response.candidates[0].content;
-      if (content && content.parts) {
-        for (const part of content.parts) {
-          if (part.inlineData && part.inlineData.data) {
-            generatedImageUrl = `data:image/png;base64,${part.inlineData.data}`;
-          } else if (part.text) {
-            generatedText = part.text;
-          }
-        }
-      }
+  let generatedImageUrl: string | null = null;
+  let generatedText: string | null = null;
+
+  for (const part of parts) {
+    if (part.inlineData?.data) {
+      generatedImageUrl = `data:image/png;base64,${part.inlineData.data}`;
     }
-
-    return {
-      imageUrl: generatedImageUrl,
-      text: generatedText,
-    };
-  } catch (error) {
-    console.error("Error calling Gemini API:", error);
-    throw error;
+    if (part.text) {
+      generatedText = part.text;
+    }
   }
+
+  return {
+    imageUrl: generatedImageUrl,
+    text: generatedText,
+  };
 };
