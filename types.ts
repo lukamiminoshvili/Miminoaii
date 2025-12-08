@@ -9,3 +9,7 @@ export interface GenerationResult {
   imageUrl: string | null;
   text: string | null;
 }
+
+export interface VideoResult {
+  videoUrl: string;
+}

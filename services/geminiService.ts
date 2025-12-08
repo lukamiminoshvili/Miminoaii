@@ -1,45 +1,34 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import { GoogleGenAI } from "@google/genai";
 import { FileData, GenerationResult } from "../types";
-
-const createClient = () => {
-  const apiKey = import.meta.env.VITE_API_KEY;
-  if (!apiKey) {
-    throw new Error("VITE_API_KEY is not set");
-  }
-  return new GoogleGenerativeAI(apiKey);
-};
 
 export const editImageWithGemini = async (
   imageData: FileData,
   prompt: string
 ): Promise<GenerationResult> => {
-  const genAI = createClient();
-  const model = genAI.getGenerativeModel({
-    model: "gemini-1.5-flash",
-  });
-
+  // Use process.env.API_KEY as defined in vite.config.ts
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  
+  // Clean base64 string (remove data URL prefix)
   const cleanBase64 = imageData.base64.split(",")[1];
 
-  const result = await model.generateContent({
-    contents: [
-      {
-        role: "user",
-        parts: [
-          {
-            inlineData: {
-              data: cleanBase64,
-              mimeType: imageData.mimeType,
-            },
+  // Use Gemini 2.5 Flash Image for editing tasks
+  const response = await ai.models.generateContent({
+    model: 'gemini-2.5-flash-image',
+    contents: {
+      parts: [
+        {
+          inlineData: {
+            mimeType: imageData.mimeType,
+            data: cleanBase64,
           },
-          {
-            text: prompt,
-          },
-        ],
-      },
-    ],
+        },
+        {
+          text: prompt,
+        },
+      ],
+    },
   });
 
-  const response = result.response;
   const parts = response.candidates?.[0]?.content?.parts ?? [];
 
   let generatedImageUrl: string | null = null;
@@ -48,8 +37,7 @@ export const editImageWithGemini = async (
   for (const part of parts) {
     if (part.inlineData?.data) {
       generatedImageUrl = `data:image/png;base64,${part.inlineData.data}`;
-    }
-    if (part.text) {
+    } else if (part.text) {
       generatedText = part.text;
     }
   }
@@ -58,4 +46,42 @@ export const editImageWithGemini = async (
     imageUrl: generatedImageUrl,
     text: generatedText,
   };
+};
+
+export const generateVideoWithGemini = async (
+  imageData: FileData,
+  prompt: string
+): Promise<string> => {
+  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const cleanBase64 = imageData.base64.split(",")[1];
+
+  // Initialize video generation
+  let operation = await ai.models.generateVideos({
+    model: 'veo-3.1-fast-generate-preview',
+    prompt: prompt,
+    image: {
+      imageBytes: cleanBase64,
+      mimeType: imageData.mimeType,
+    },
+    config: {
+      numberOfVideos: 1,
+      resolution: '720p',
+      aspectRatio: '16:9'
+    }
+  });
+
+  // Poll for completion
+  while (!operation.done) {
+    await new Promise(resolve => setTimeout(resolve, 10000)); // Poll every 10 seconds
+    operation = await ai.operations.getVideosOperation({operation: operation});
+  }
+
+  const videoUri = operation.response?.generatedVideos?.[0]?.video?.uri;
+  
+  if (!videoUri) {
+    throw new Error("Failed to generate video");
+  }
+
+  // Append API key to access the video content
+  return `${videoUri}&key=${process.env.API_KEY}`;
 };
