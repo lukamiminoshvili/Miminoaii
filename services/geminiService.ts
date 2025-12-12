@@ -1,4 +1,4 @@
-import { GoogleGenAI, Chat, Schema } from "@google/genai";
+import { GoogleGenAI, Chat } from "@google/genai";
 import { FileData, GenerationResult } from "../types";
 
 // --- EXISTING FUNCTIONS ---
