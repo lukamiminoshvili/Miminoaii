@@ -9,6 +9,18 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
     define: {
       'process.env.API_KEY': JSON.stringify(env.API_KEY)
+    },
+    build: {
+      rollupOptions: {
+        // We externalize @google/genai so it is not bundled.
+        // It will be loaded from the CDN defined in index.html importmap.
+        external: ['@google/genai'],
+        output: {
+          globals: {
+            '@google/genai': 'GoogleGenAI'
+          }
+        }
+      }
     }
   }
 })
